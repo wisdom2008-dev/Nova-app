@@ -50,6 +50,15 @@ jobs:
           python -m pip install buildozer
           python -m pip install "cython==0.29.34"
 
+      - name: Install Android command line tools
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-35"
+          sdkmanager "build-tools;35.0.0"
+
       - name: Build APK
         run: |
           buildozer android debug
