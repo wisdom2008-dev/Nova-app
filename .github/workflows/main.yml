@@ -29,10 +29,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip autoconf automake libtool \
-            pkg-config zlib1g-dev libncurses5-dev \
-            libncursesw5-dev libtinfo6 cmake \
-            libffi-dev libssl-dev
+            git zip unzip curl \
+            autoconf automake libtool \
+            pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev \
+            libtinfo6 cmake libffi-dev libssl-dev
 
       - name: Install Buildozer
         run: |
@@ -40,30 +41,45 @@ jobs:
           pip install buildozer
           pip install "cython==0.29.34"
 
-      - name: Prepare Android SDK
+      - name: Prepare Buildozer Android SDK
         run: |
-          mkdir -p "$HOME/.buildozer/android/platform/android-sdk"
-          mkdir -p "$HOME/.buildozer/android/platform/android-sdk/build-tools/35.0.0"
-
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline.zip
-          mkdir -p /tmp/cmdline
-          unzip -q /tmp/cmdline.zip -d /tmp/cmdline
-
-          mkdir -p "$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest"
-          cp -r /tmp/cmdline/cmdline-tools/* "$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/"
-
           export ANDROID_HOME="$HOME/.buildozer/android/platform/android-sdk"
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+
+          rm -rf "$ANDROID_HOME"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+
+          curl -L \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+            -o /tmp/tools.zip
+
+          unzip -q /tmp/tools.zip -d /tmp/android-tools
+
+          mv /tmp/android-tools/cmdline-tools \
+            "$ANDROID_HOME/cmdline-tools/latest"
+
+          mkdir -p "$ANDROID_HOME/tools/bin"
+
+          ln -sf \
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "$ANDROID_HOME/tools/bin/sdkmanager"
+
+          ln -sf \
+            "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" \
+            "$ANDROID_HOME/tools/bin/avdmanager"
+
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          yes | "$ANDROID_HOME/tools/bin/sdkmanager" --licenses || true
+
+          "$ANDROID_HOME/tools/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Build APK
         run: |
           export ANDROID_HOME="$HOME/.buildozer/android/platform/android-sdk"
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
           buildozer android debug
 
