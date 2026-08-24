@@ -17,7 +17,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: "3.x"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -38,13 +38,15 @@ jobs:
           sudo apt update
           sudo apt -y install automake libltdl-dev
 
-      - name: Prepare Android SDK and NDK
+      - name: Prepare Android SDK, NDK and p4a
         run: |
           sed -i.bak "s/# android.accept_sdk_license = False/android.accept_sdk_license = True/" buildozer.spec
+          sed -i.bak "s/#p4a.branch = master/p4a.branch = develop/" buildozer.spec
           buildozer android p4a -- --help
 
       - name: Build APK
         run: |
+          touch main.py
           buildozer android debug
 
       - name: Upload APK
